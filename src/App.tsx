@@ -8,6 +8,7 @@ import Work from './components/Work'
 import Skills from './components/Skills'
 import Credentials from './components/Credentials'
 import Contact from './components/Contact'
+import PlayCTA from './components/PlayCTA'
 import Footer from './components/Footer'
 import Preloader from './components/Preloader'
 import CommandPalette from './components/CommandPalette'
@@ -45,6 +46,8 @@ export default function App() {
         <About />
         <div className="shell"><div className="rule" /></div>
         <Experience />
+        <div className="shell"><div className="rule" /></div>
+        <PlayCTA />
         <div className="shell"><div className="rule" /></div>
         <Work />
         <div className="shell"><div className="rule" /></div>

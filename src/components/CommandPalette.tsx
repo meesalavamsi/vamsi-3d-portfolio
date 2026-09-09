@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight, Check, Copy, FileText, Mail, Search,
+  ArrowRight, Check, Copy, FileText, Gamepad2, Mail, Search,
 } from 'lucide-react'
 import { Github, Linkedin } from './BrandIcons'
 import { identity, sections } from '../data/resume'
@@ -41,6 +41,15 @@ export default function CommandPalette({
 
     return [
       ...jump,
+      {
+        id: 'play',
+        label: 'Play “The First 90 Days”',
+        hint: '3D simulator · 5 real scenarios',
+        icon: <Gamepad2 size={15} />,
+        run: () => {
+          window.location.href = '/game'
+        },
+      },
       {
         id: 'resume',
         label: 'View traditional resume',

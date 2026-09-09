@@ -15,6 +15,12 @@ export default function Footer() {
         </div>
 
         <div className="flex items-center gap-6">
+          <a
+            href="/game"
+            className="t-mono text-[0.66rem] text-[var(--color-faint)] transition-colors hover:text-[var(--color-gold)]"
+          >
+            Play the simulator ↗
+          </a>
           <p className="t-mono hidden text-[0.66rem] text-[var(--color-faint)] sm:block">
             Built with React · TypeScript · Three.js
           </p>
