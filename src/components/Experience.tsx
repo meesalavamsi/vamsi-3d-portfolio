@@ -1,34 +1,88 @@
-import Reveal, { SectionHead } from './Reveal'
 import { experience } from '../data/resume'
+import Reveal from './Reveal'
+import SectionHeader from './SectionHeader'
 
 export default function Experience() {
   return (
-    <section id="experience" className="max-w-6xl mx-auto px-6 py-24 md:py-32">
-      <SectionHead index="02" label="Experience" title="Where I've worked." />
-      <div className="relative pl-6 md:pl-10 border-l border-white/10 space-y-14">
-        {experience.map((e, i) => (
-          <Reveal key={e.id} delay={i * 0.1} className="relative">
-            <span className="absolute -left-[31px] md:-left-[47px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#05060e] border-2 border-cyan-400 shadow-[0_0_12px_rgba(77,208,255,0.6)]" />
-            <div className="card p-6 md:p-8">
-              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                <h3 className="text-xl md:text-2xl font-bold text-white">{e.role}</h3>
-                <span className="font-mono text-xs text-cyan-300 tracking-wider">{e.period}</span>
-              </div>
-              <div className="text-sm text-slate-500 font-mono tracking-wider mb-4">{e.org}</div>
-              <p className="text-slate-300 font-medium mb-5">{e.summary}</p>
-              <ul className="space-y-2 mb-6">
-                {e.bullets.map((b) => (
-                  <li key={b} className="flex gap-3 text-sm text-slate-400">
-                    <span className="text-cyan-400 mt-0.5">▸</span>{b}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex flex-wrap gap-2">
-                {e.tech.map((t) => <span key={t} className="chip">{t}</span>)}
-              </div>
-            </div>
-          </Reveal>
-        ))}
+    <section id="experience" className="scroll-mt-24 py-24 md:py-32">
+      <div className="shell">
+        <SectionHeader
+          index="02"
+          label="Experience"
+          title="Where the theory met"
+          serifWord="production"
+          intro="Two roles on the same enterprise platform team — first building automation, then making it faster and more reliable."
+        />
+
+        <ol className="mt-14 space-y-4">
+          {experience.map((job, i) => (
+            <Reveal key={job.id} delay={i * 90} as="li">
+              <article className="card p-6 md:p-9">
+                <div className="grid gap-7 md:grid-cols-12 md:gap-8">
+                  {/* meta rail */}
+                  <div className="md:col-span-4">
+                    <div className="flex items-center gap-3">
+                      <span className="t-mono text-[0.7rem] text-[var(--color-gold)]">{job.num}</span>
+                      {job.current && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(74,222,128,0.3)] bg-[rgba(74,222,128,0.07)] px-2.5 py-0.5">
+                          <span className="pulse-dot size-1.5 rounded-full bg-[var(--color-mint)]" />
+                          <span className="t-mono text-[0.6rem] uppercase tracking-[0.12em] text-[var(--color-mint)]">
+                            Current
+                          </span>
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="t-display mt-4 text-[clamp(1.25rem,2.1vw,1.6rem)] leading-tight">
+                      {job.role}
+                    </h3>
+
+                    <div className="mt-3 space-y-1">
+                      <p className="text-[0.88rem] font-medium text-[var(--color-paper)]">{job.org}</p>
+                      <p className="t-mono text-[0.68rem] text-[var(--color-faint)]">{job.period}</p>
+                    </div>
+
+                    {'metrics' in job && job.metrics && (
+                      <div className="mt-6 flex gap-6">
+                        {job.metrics.map((m) => (
+                          <div key={m.label}>
+                            <div className="t-display text-[1.6rem] text-[var(--color-gold)]">{m.value}</div>
+                            <div className="t-mono mt-0.5 text-[0.63rem] text-[var(--color-faint)]">{m.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* detail */}
+                  <div className="md:col-span-8 md:border-l md:border-[var(--color-line)] md:pl-8">
+                    <p className="t-body text-[1rem]">{job.summary}</p>
+
+                    <ul className="mt-6 space-y-3">
+                      {job.bullets.map((b) => (
+                        <li key={b} className="flex gap-3 text-[0.9rem] leading-relaxed text-[#c5c9d0]">
+                          <span
+                            className="mt-[0.55rem] size-1 shrink-0 rounded-full bg-[var(--color-gold)]"
+                            aria-hidden
+                          />
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <ul className="mt-7 flex flex-wrap gap-2">
+                      {job.tech.map((t) => (
+                        <li key={t} className="chip">
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </ol>
       </div>
     </section>
   )

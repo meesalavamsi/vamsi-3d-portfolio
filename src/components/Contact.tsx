@@ -1,36 +1,135 @@
-import { Mail, ArrowUpRight } from 'lucide-react'
-import Reveal from './Reveal'
+import { useState } from 'react'
+import { ArrowUpRight, Check, Copy, FileText, Mail } from 'lucide-react'
+import { Github, Linkedin } from './BrandIcons'
 import { identity } from '../data/resume'
-import { GithubIcon, LinkedinIcon } from './BrandIcons'
+import Reveal from './Reveal'
+import SectionHeader from './SectionHeader'
 
-export default function Contact() {
+export default function Contact({ onResume }: { onResume: () => void }) {
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(identity.email)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      window.location.href = `mailto:${identity.email}`
+    }
+  }
+
+  const links = [
+    { label: 'GitHub', handle: identity.githubHandle, href: identity.github, Icon: Github },
+    { label: 'LinkedIn', handle: identity.linkedinHandle, href: identity.linkedin, Icon: Linkedin },
+  ]
+
   return (
-    <section id="contact" className="relative py-28 md:py-40 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-950/20 to-transparent pointer-events-none" />
-      <div className="relative max-w-4xl mx-auto px-6 text-center">
-        <Reveal>
-          <div className="section-label mb-5">06 — CONTACT</div>
-          <h2 className="text-4xl md:text-7xl font-black tracking-tight text-white leading-[1.05]">
-            Let's build<br /><span className="grad-text">something real.</span>
-          </h2>
-          <p className="text-slate-400 mt-7 max-w-xl mx-auto leading-relaxed">
-            I'm open to internships, junior backend / full-stack roles, and interesting collaborations.
-            The fastest way to reach me is email — I reply quickly.
+    <section id="contact" className="relative scroll-mt-24 overflow-hidden py-24 md:py-32">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-[-16rem] left-1/2 h-[36rem] w-[64rem] -translate-x-1/2"
+        style={{
+          background:
+            'radial-gradient(50% 50% at 50% 50%, rgba(240,180,41,0.11) 0%, transparent 68%)',
+        }}
+      />
+
+      <div className="shell relative">
+        <SectionHeader index="06" label="Contact" title="Let's build" serifWord="something real" />
+
+        <Reveal delay={140}>
+          <p className="t-body mt-6 max-w-xl">
+            I'm looking for software engineering roles and internships where I can work on backend
+            systems, automation and platforms that matter. If that sounds like your team, I'd love to talk.
           </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <a href={`mailto:${identity.email}`} className="btn-primary !text-base !px-9 !py-4">
-              <Mail size={17} /> {identity.email}
-            </a>
-          </div>
-          <div className="mt-8 flex justify-center gap-3">
-            <a href={identity.github} target="_blank" rel="noreferrer" className="btn-ghost">
-              <GithubIcon size={16} /> GitHub <ArrowUpRight size={13} className="opacity-60" />
-            </a>
-            <a href={identity.linkedin} target="_blank" rel="noreferrer" className="btn-ghost">
-              <LinkedinIcon size={16} /> LinkedIn <ArrowUpRight size={13} className="opacity-60" />
-            </a>
+        </Reveal>
+
+        {/* email */}
+        <Reveal delay={200}>
+          <div className="mt-12 border-y border-[var(--color-line)] py-8">
+            <span className="t-eyebrow text-[var(--color-faint)]">Email</span>
+            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <a
+                href={`mailto:${identity.email}`}
+                className="t-display break-all text-[clamp(1.5rem,4.4vw,3rem)] transition-colors hover:text-[var(--color-gold)]"
+              >
+                {identity.email}
+              </a>
+              <button
+                onClick={copy}
+                className="btn btn-ghost h-10 px-4 text-[0.8rem]"
+                aria-label="Copy email address"
+              >
+                {copied ? <Check size={14} className="text-[var(--color-mint)]" /> : <Copy size={14} />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
           </div>
         </Reveal>
+
+        {/* links */}
+        <div className="grid gap-4 pt-10 sm:grid-cols-2 lg:grid-cols-4">
+          {links.map((l, i) => (
+            <Reveal key={l.label} delay={i * 70}>
+              <a
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card group flex h-full items-center gap-4 p-5"
+              >
+                <span className="grid size-10 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-ink-3)] text-[var(--color-paper)]">
+                  <l.Icon size={17} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[0.88rem] font-medium">{l.label}</span>
+                  <span className="t-mono block truncate text-[0.66rem] text-[var(--color-faint)]">
+                    {l.handle}
+                  </span>
+                </span>
+                <ArrowUpRight
+                  size={15}
+                  className="shrink-0 text-[var(--color-faint)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--color-gold)]"
+                />
+              </a>
+            </Reveal>
+          ))}
+
+          <Reveal delay={140}>
+            <a href={`mailto:${identity.email}`} className="card group flex h-full items-center gap-4 p-5">
+              <span className="grid size-10 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-ink-3)]">
+                <Mail size={17} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.88rem] font-medium">Direct email</span>
+                <span className="t-mono block truncate text-[0.66rem] text-[var(--color-faint)]">
+                  Straight to my inbox
+                </span>
+              </span>
+              <ArrowUpRight
+                size={15}
+                className="shrink-0 text-[var(--color-faint)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--color-gold)]"
+              />
+            </a>
+          </Reveal>
+
+          <Reveal delay={210}>
+            <button onClick={onResume} className="card group flex h-full w-full items-center gap-4 p-5 text-left">
+              <span className="grid size-10 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-ink-3)]">
+                <FileText size={17} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.88rem] font-medium">Resume</span>
+                <span className="t-mono block truncate text-[0.66rem] text-[var(--color-faint)]">
+                  Print or save as PDF
+                </span>
+              </span>
+              <ArrowUpRight
+                size={15}
+                className="shrink-0 text-[var(--color-faint)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--color-gold)]"
+              />
+            </button>
+          </Reveal>
+        </div>
       </div>
     </section>
   )

@@ -1,98 +1,155 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { motion, useInView } from 'framer-motion'
-import { ArrowDown, Mail, FileText } from 'lucide-react'
+import { Suspense, lazy } from 'react'
+import { ArrowDownRight, ArrowUpRight, Mail } from 'lucide-react'
 import { identity, stats } from '../data/resume'
-import { GithubIcon, LinkedinIcon } from './BrandIcons'
+import { useCounter, useInView, useMediaQuery } from '../lib/hooks'
+import Reveal from './Reveal'
 
-const HeroScene = lazy(() => import('../three/HeroScene'))
+const Sculpture = lazy(() => import('../three/Sculpture'))
 
-function Stat({ value, suffix, label, decimals = 0 }: { value: number; suffix: string; label: string; decimals?: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-30px' })
-  const [n, setN] = useState(0)
-
-  useEffect(() => {
-    if (!inView) return
-    const start = performance.now()
-    let raf = 0
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / 1400)
-      setN(value * (1 - Math.pow(1 - p, 3)))
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [inView, value])
+function Stat({
+  value, suffix, label, note, decimals = 0, delay,
+}: {
+  value: number; suffix: string; label: string; note: string; decimals?: number; delay: number
+}) {
+  const { ref, seen } = useInView<HTMLDivElement>('0px')
+  const n = useCounter(value, seen, 1500, decimals)
 
   return (
-    <div ref={ref}>
-      <div className="text-2xl md:text-4xl font-black text-white">
-        {n.toFixed(decimals)}<span className="grad-text">{suffix}</span>
+    <div ref={ref} className="px-5 py-6 md:px-7 md:py-7" style={{
+      opacity: seen ? 1 : 0,
+      transform: seen ? 'none' : 'translateY(10px)',
+      transition: `all 0.6s cubic-bezier(0.2,0.8,0.2,1) ${delay}ms`,
+    }}>
+      <div className="t-display text-[clamp(1.9rem,3.4vw,2.6rem)] tabular-nums">
+        {decimals ? n.toFixed(decimals) : Math.round(n)}
+        <span className="text-[var(--color-gold)]">{suffix}</span>
       </div>
-      <div className="text-[10px] md:text-xs tracking-[0.18em] text-slate-500 mt-1 uppercase">{label}</div>
+      <div className="mt-2 text-[0.82rem] font-medium leading-snug">{label}</div>
+      <div className="t-mono mt-1 text-[0.66rem] text-[var(--color-faint)]">{note}</div>
     </div>
   )
 }
 
 export default function Hero({ onResume }: { onResume: () => void }) {
+  const wide = useMediaQuery('(min-width: 768px)')
+  const noMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+
   return (
-    <section id="top" className="relative min-h-screen flex flex-col justify-center overflow-hidden">
-      <Suspense fallback={null}><HeroScene /></Suspense>
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#05060e] pointer-events-none" />
+    <section id="top" className="relative overflow-hidden pt-[7.5rem] md:pt-[9rem]">
+      {/* ambient light */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[-12rem] h-[34rem] w-[62rem] -translate-x-1/2 opacity-[0.5]"
+        style={{
+          background:
+            'radial-gradient(50% 50% at 50% 50%, rgba(240,180,41,0.13) 0%, rgba(240,180,41,0.04) 42%, transparent 72%)',
+        }}
+      />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 w-full pt-28 pb-16">
-        <motion.p
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.7 }}
-          className="section-label mb-6 flex items-center gap-3"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 pulse-dot" />
-          AVAILABLE FOR OPPORTUNITIES
-        </motion.p>
+      <div className="shell relative">
+        <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-8">
+          {/* ── copy ─────────────────────────────── */}
+          <div className="lg:col-span-7">
+            <Reveal>
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-[var(--color-line)] bg-[var(--color-ink-2)] py-1.5 pl-2.5 pr-4">
+                <span className="relative grid size-4 place-items-center">
+                  <span className="pulse-dot absolute size-2 rounded-full bg-[var(--color-mint)]" />
+                  <span className="absolute size-4 rounded-full bg-[var(--color-mint)] opacity-20" />
+                </span>
+                <span className="t-mono text-[0.68rem] text-[#c9cdd4]">{identity.availability}</span>
+              </div>
+            </Reveal>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.85, duration: 0.8 }}
-          className="text-[13vw] md:text-[7.5rem] leading-[0.95] font-black tracking-tight text-white"
-        >
-          {identity.first}
-          <br />
-          <span className="grad-text">{identity.last}</span>
-        </motion.h1>
+            <h1 className="mt-7">
+              <Reveal delay={60}>
+                <span className="t-display block text-[clamp(3.1rem,10.5vw,7.5rem)]">
+                  {identity.first}
+                </span>
+              </Reveal>
+              <Reveal delay={130}>
+                <span className="t-serif block text-[clamp(3.1rem,10.5vw,7.5rem)] italic leading-[0.95] text-[var(--color-gold)]">
+                  {identity.last}
+                </span>
+              </Reveal>
+            </h1>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.05, duration: 0.7 }}
-          className="mt-6 max-w-xl"
-        >
-          <p className="font-mono text-xs md:text-sm tracking-[0.3em] text-cyan-300/90 mb-4">{identity.headline.toUpperCase()}</p>
-          <p className="text-slate-400 text-base md:text-lg leading-relaxed">{identity.pitch}</p>
-        </motion.div>
+            <Reveal delay={200}>
+              <div className="mt-7 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+                <span className="t-mono text-[0.64rem] uppercase tracking-[0.14em] text-[#d4d8de] sm:text-[0.72rem] sm:tracking-[0.16em]">
+                  {identity.role}
+                </span>
+                <span className="hidden h-px w-6 bg-[var(--color-line)] sm:block" aria-hidden />
+                <span className="t-mono text-[0.64rem] uppercase tracking-[0.14em] text-[var(--color-faint)] sm:text-[0.72rem] sm:tracking-[0.16em]">
+                  {identity.headline}
+                </span>
+              </div>
+            </Reveal>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.25, duration: 0.7 }}
-          className="mt-9 flex flex-wrap items-center gap-4"
-        >
-          <a href="#projects" className="btn-primary">View My Work <ArrowDown size={15} /></a>
-          <button onClick={onResume} className="btn-ghost"><FileText size={15} /> Resume</button>
-          <div className="flex gap-2 ml-1">
-            <a href={identity.github} target="_blank" rel="noreferrer" aria-label="GitHub" className="btn-ghost !p-3 !rounded-full"><GithubIcon size={17} /></a>
-            <a href={identity.linkedin} target="_blank" rel="noreferrer" aria-label="LinkedIn" className="btn-ghost !p-3 !rounded-full"><LinkedinIcon size={17} /></a>
-            <a href={`mailto:${identity.email}`} aria-label="Email" className="btn-ghost !p-3 !rounded-full"><Mail size={17} /></a>
+            <Reveal delay={260}>
+              <p className="t-body mt-6 max-w-xl">{identity.pitch}</p>
+            </Reveal>
+
+            <Reveal delay={330}>
+              <div className="mt-9 flex flex-wrap items-center gap-3">
+                <a href="#work" className="btn btn-gold">
+                  See my work
+                  <ArrowDownRight size={16} />
+                </a>
+                <button onClick={onResume} className="btn btn-ghost">
+                  Traditional resume
+                </button>
+                <a
+                  href={`mailto:${identity.email}`}
+                  className="btn btn-ghost"
+                  aria-label={`Email ${identity.email}`}
+                >
+                  <Mail size={15} />
+                  Get in touch
+                </a>
+              </div>
+            </Reveal>
           </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.6, duration: 0.9 }}
-          className="mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-white/10 pt-8"
-        >
-          {stats.map((s) => <Stat key={s.label} {...s} />)}
-        </motion.div>
+          {/* ── sculpture ─────────────────────────── */}
+          <div className="relative lg:col-span-5">
+            <div className="relative mx-auto aspect-square w-full max-w-[26rem]">
+              {!noMotion && (
+                <Suspense fallback={null}>
+                  <Sculpture dense={wide} />
+                </Suspense>
+              )}
+              {/* corner frame */}
+              <div aria-hidden className="pointer-events-none absolute inset-0">
+                {[
+                  'left-0 top-0 border-l border-t',
+                  'right-0 top-0 border-r border-t',
+                  'left-0 bottom-0 border-l border-b',
+                  'right-0 bottom-0 border-r border-b',
+                ].map((c) => (
+                  <span key={c} className={`absolute size-5 border-[var(--color-line)] ${c}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── stat strip ─────────────────────────── */}
+        <div className="mt-16 md:mt-20">
+          <div className="rule" />
+          <dl className="grid grid-cols-2 divide-[var(--color-line)] md:grid-cols-4 md:divide-x">
+            {stats.map((s, i) => (
+              <Stat key={s.label} {...s} delay={i * 90} />
+            ))}
+          </dl>
+          <div className="rule" />
+        </div>
+
+        {/* scroll cue */}
+        <div className="flex items-center justify-center gap-2 py-6 md:py-8">
+          <span className="t-mono text-[0.64rem] text-[var(--color-faint)]">SCROLL</span>
+          <ArrowUpRight size={12} className="rotate-135 text-[var(--color-faint)]" />
+        </div>
       </div>
-
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3 }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 text-slate-500 floaty"
-      >
-        <ArrowDown size={18} />
-      </motion.div>
     </section>
   )
 }

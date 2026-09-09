@@ -1,67 +1,58 @@
-# 🎮 VAMSI MEESALA — 3D Game Portfolio
+# Vamsi Meesala — Portfolio
 
-A story-driven, game-based interactive portfolio. Visitors play as **PLAYER**, exploring a
-futuristic 3D world where every location is a chapter of Vamsi's resume — education, skills,
-experience, projects, certifications, and coding journey.
+A single-page portfolio built for how recruiters actually read: everything visible, structured,
+and scannable in 30 seconds — with a printable resume one click away.
 
-## ✨ Features
+**Live:** https://vamsi-3d-portfolio.vercel.app
 
-- **Cinematic boot sequence** → title screen → avatar intro dialogue
-- **3D world map** (React Three Fiber) with 9 unlockable locations, hover glow, click-to-enter, WASD player avatar, `[E]` interact prompts
-- **Mission & XP system** — 9 missions, 6 player levels, persistent save (localStorage)
-- **8 hidden achievements** with toast notifications
-- **Locations**: Home Base, University (animated CGPA ring), Skill Lab (playable Linux terminal), ServiceNow HQ (animated stats + clickable workflow pipelines), Project City (4 project interiors incl. a live energy graph), Cyber Arena (timed quiz minigame + leaderboard), Certification Vault (unlock cards), Algorithm Arena (skill XP bars), Mission Control (contact + finale)
-- **Cinematic ending** when all missions are complete
-- **Traditional Resume Mode** — clean, printable (Print → Save as PDF), always one click away
-- **HUD**: identity, level/XP bar, missions panel, SVG mini-map, sound toggle
-- **Sound**: WebAudio-synthesized SFX (no assets), off by default, subtle ambient hum
-- **Accessibility**: skip-intro, resume fast-lane, keyboard navigation, `prefers-reduced-motion` support, WebGL-unavailable 2D fallback
-- **Mobile**: simplified camera, touch controls, action bar (Map / Missions / Resume)
-- **Performance**: lazy-loaded 3D chunks, instanced particles, no external model files
+## Stack
 
-## 🧱 Tech Stack
+| Layer | Choice |
+| --- | --- |
+| Framework | React 19 + TypeScript + Vite |
+| Styling | Tailwind CSS v4 (CSS-first tokens in `src/index.css`) |
+| 3D | Three.js + React Three Fiber (lazy-loaded hero sculpture) |
+| Icons | lucide-react (+ inline brand glyphs) |
+| Fonts | Self-hosted Inter, Instrument Serif, JetBrains Mono (latin subset, ~292 KB) |
+| Deploy | Vercel |
 
-React 19 · TypeScript · Vite · Three.js + React Three Fiber + drei · Tailwind CSS 4 ·
-Framer Motion · Zustand · Lucide icons
-
-## 🚀 Run locally
-
-```bash
-npm install
-npm run dev        # http://localhost:5173
-```
-
-## 📦 Build
-
-```bash
-npm run build      # outputs dist/
-npm run preview    # preview the production build
-```
-
-## ☁️ Deploy to Vercel
-
-1. Push this folder to a GitHub repo.
-2. In Vercel: **New Project → Import repo**. Vercel auto-detects Vite (`vercel.json` included).
-3. Deploy. Done.
-
-Or with the CLI: `npx vercel --prod`
-
-## ✏️ Edit content
-
-All resume facts live in **one file**: `src/data/resume.ts`
-(name, email, LinkedIn/GitHub URLs, skills, experience, projects, certifications, XP, levels).
-
-> ⚠️ Update `identity.linkedin` in `src/data/resume.ts` with your real LinkedIn URL (currently a placeholder).
-
-## 🗺 Structure
+## Structure
 
 ```
 src/
-├── data/resume.ts        # single source of truth (resume + game config)
-├── store/gameStore.ts    # zustand: XP, missions, achievements, phases
-├── utils/sound.ts        # WebAudio synth SFX + ambient
-├── three/                # WorldMap, Effects (particles/avatar/grid), title & intro scenes
-├── components/           # HUD, MissionPanel, MiniMap, Toasts, DialogueBox, SectionShell, widgets…
-└── sections/             # HomeBase, University, SkillLab, ServiceNowHQ, ProjectCity (+projects/),
-                          # CyberArena, CertVault, CodingArena, MissionControl
+  data/resume.ts        ← single source of truth for every fact on the page
+  components/
+    Nav, Hero, Marquee, About, Experience, Work, ProjectVisual,
+    Skills, Credentials, Contact, Footer,
+    Preloader, CommandPalette, ResumeMode, SectionHeader, Reveal, BrandIcons
+  three/Sculpture.tsx   ← lazy-loaded point-cloud hero visual
+  lib/hooks.ts          ← in-view, counter, active-section, scroll-progress
 ```
+
+### Editing content
+
+All copy, metrics, skills, projects, experience and links live in **`src/data/resume.ts`**.
+Change it there once and every section — including the printable resume — updates.
+
+## Features
+
+- Structured sections with numbered headers and consistent rhythm
+- Animated metric counters, per-project hand-built SVG diagrams
+- `⌘K` / `Ctrl+K` command palette: jump to sections, copy email, open links, open resume
+- Traditional resume mode — ATS-friendly, prints to A4 (`Print → Save as PDF`)
+- SEO: Open Graph + Twitter cards, generated `og.png`, JSON-LD `Person` schema, `noscript` fallback
+- Accessibility: skip link, semantic landmarks, visible focus rings, `prefers-reduced-motion` support
+- Performance: Three.js code-split out of the initial bundle, no image assets, subset fonts
+
+## Local development
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # type-check + production build
+npm run preview  # serve the build
+```
+
+## Deploy
+
+Pushing to `main` triggers a Vercel production deploy automatically.
