@@ -169,7 +169,7 @@ interface Hotspot {
   visible: boolean
 }
 
-function HotspotMesh({ h }: { h: Hotspot }) {
+function HotspotMesh({ h, isObjective }: { h: Hotspot; isObjective: boolean }) {
   const ref = useRef<THREE.Mesh>(null)
   useFrame(({ clock }) => {
     if (ref.current) {
@@ -185,6 +185,17 @@ function HotspotMesh({ h }: { h: Hotspot }) {
         <meshStandardMaterial color={h.color} emissive={h.color} emissiveIntensity={2.4} />
       </mesh>
       <pointLight color={h.color} intensity={5} distance={7} position={[0, h.pos[1], 0]} />
+      {/* sky beam — objective beams are taller and brighter */}
+      <mesh position={[0, isObjective ? 14 : 8, 0]}>
+        <cylinderGeometry args={[isObjective ? 0.35 : 0.14, isObjective ? 0.55 : 0.2, isObjective ? 28 : 16, 8, 1, true]} />
+        <meshBasicMaterial color={h.color} transparent opacity={isObjective ? 0.35 : 0.12} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {isObjective && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
+          <ringGeometry args={[1.2, 1.7, 32]} />
+          <meshBasicMaterial color={h.color} transparent opacity={0.7} side={THREE.DoubleSide} />
+        </mesh>
+      )}
     </group>
   )
 }
@@ -202,7 +213,7 @@ export default function City({ onPrompt }: { onPrompt: (p: string | null) => voi
   // stranger appears after ~30s
   useEffect(() => {
     if (s.strangerMet) return
-    const t = setTimeout(() => setStrangerVisible(true), 30000)
+    const t = setTimeout(() => setStrangerVisible(true), 12000)
     return () => clearTimeout(t)
   }, [s.strangerMet])
 
@@ -262,6 +273,16 @@ export default function City({ onPrompt }: { onPrompt: (p: string | null) => voi
     }
   }
 
+  // the current objective — always visible as a sky beam
+  const objectiveId =
+    !s.strangerMet ? (strangerVisible ? 'stranger' : 'shop')
+    : !s.shopMet ? 'shop'
+    : s.chaseChoice && !s.chaseResolved ? 'chaseresult'
+    : !s.foundPhoto ? 'photo'
+    : !s.foundDiary ? 'diary'
+    : s.doorOpen ? 'labdoor'
+    : null
+
   const hotspots: Hotspot[] = [
     { id: 'stranger', pos: [6, 1.4, -4], label: 'TALK', color: '#ffffff', visible: strangerVisible && !s.strangerMet },
     { id: 'shop', pos: [-14, 1.4, 10], label: 'ENTER SHOP', color: '#fbbf24', visible: !s.shopMet },
@@ -277,7 +298,7 @@ export default function City({ onPrompt }: { onPrompt: (p: string | null) => voi
     const grp = useRef<THREE.Group>(null)
     useFrame(({ camera }, dt) => {
       const d = Math.min(dt, 0.05)
-      const speed = 9 * d
+      const speed = 12 * d
       let [x, y, z] = posRef.current
       let moved = false
       if (keys.current['w'] || keys.current['arrowup']) { z -= speed; moved = true }
@@ -327,7 +348,7 @@ export default function City({ onPrompt }: { onPrompt: (p: string | null) => voi
       <Canvas camera={{ position: [0, 7.5, 11], fov: 55 }} dpr={[1, 1.6]} gl={{ antialias: true }}>
         <color attach="background" args={['#050812']} />
         <fog attach="fog" args={['#050812', 18, 70]} />
-        <ambientLight intensity={0.22} />
+        <ambientLight intensity={0.32} />
         <directionalLight position={[10, 30, 5]} intensity={0.35} color="#5f7dbb" />
         {/* ground */}
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -340,7 +361,7 @@ export default function City({ onPrompt }: { onPrompt: (p: string | null) => voi
         <Rain />
         <Vehicles />
         <Npcs />
-        {hotspots.map((h) => <HotspotMesh key={h.id} h={h} />)}
+        {hotspots.map((h) => <HotspotMesh key={h.id} h={h} isObjective={h.id === objectiveId} />)}
         {/* stranger NPC figure */}
         {strangerVisible && !s.strangerMet && (
           <mesh position={[6, 0.9, -4]}>
@@ -348,6 +369,11 @@ export default function City({ onPrompt }: { onPrompt: (p: string | null) => voi
             <meshStandardMaterial color="#1a1030" emissive="#ffffff" emissiveIntensity={0.7} />
           </mesh>
         )}
+        {/* spawn beacon */}
+        <mesh position={[0, 10, 0]}>
+          <cylinderGeometry args={[0.5, 0.8, 20, 8, 1, true]} />
+          <meshBasicMaterial color="#4dd0ff" transparent opacity={0.1} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
         <PlayerRig />
       </Canvas>
       <input type="hidden" value={playerPos.join(',')} readOnly />

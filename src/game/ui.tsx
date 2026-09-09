@@ -87,6 +87,16 @@ export function Dialogue() {
 }
 
 /* ── HUD ───────────────────────────────────────────────── */
+function objectiveText(s: ReturnType<typeof useGameStore.getState>): string {
+  if (!s.strangerMet) return 'EXPLORE. SOMEONE IS LOOKING FOR YOU.'
+  if (!s.shopMet) return 'FOLLOW THE LIGHT.'
+  if (!s.chaseChoice) return '...'
+  if (!s.chaseResolved) return 'THE CITY REMEMBERS YOUR CHOICE.'
+  if (!s.foundPhoto) return 'SEARCH THE CITY.'
+  if (!s.foundDiary) return 'SOMETHING IS HIDDEN NEARBY.'
+  return 'FIND THE DOOR.'
+}
+
 export function HUD() {
   const s = useGameStore()
   const pct = memoryPercent(s)
@@ -100,6 +110,9 @@ export function HUD() {
         <button onClick={s.toggleSound} className="mt-1 text-[10px] text-slate-500 hover:text-white transition-colors">
           {s.soundOn ? '🔊 SOUND ON' : '🔇 SOUND OFF'}
         </button>
+      </div>
+      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 font-mono text-[10px] tracking-[0.3em] text-cyan-200/60 text-center px-4">
+        ▸ {objectiveText(s)}
       </div>
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 font-mono text-[10px] tracking-[0.25em] text-white/40 hidden md:block">
         [WASD] MOVE&nbsp;&nbsp;[E] INTERACT&nbsp;&nbsp;[M] ???&nbsp;&nbsp;[I] INVENTORY
