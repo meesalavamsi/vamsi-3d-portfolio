@@ -12,10 +12,17 @@ import Certs from './components/Certs'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
 import ResumeMode from './components/ResumeMode'
+import SimGate from './components/SimGate'
+import { lazy, Suspense } from 'react'
+import { useGameStore } from './game/gstore'
+
+const GameApp = lazy(() => import('./game/GameApp'))
 
 export default function App() {
   const [loading, setLoading] = useState(true)
   const [showResume, setShowResume] = useState(false)
+  const [inGame, setInGame] = useState(false)
+  const escaped = useGameStore((s) => s.endingsSeen.includes('escaped'))
   const { scrollYProgress } = useScroll()
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 24 })
 
@@ -48,8 +55,22 @@ export default function App() {
         <Skills />
         <Certs />
         <Contact />
+        <SimGate played={escaped} onEnter={() => setInGame(true)} />
       </main>
       <Footer />
+
+      {inGame && (
+        <Suspense fallback={
+          <div className="fixed inset-0 z-[70] bg-black flex items-center justify-center">
+            <span className="font-mono text-xs tracking-[0.4em] text-white/60 animate-pulse">LOADING SIMULATION...</span>
+          </div>
+        }>
+          <GameApp
+            onExit={() => setInGame(false)}
+            onMeetCreator={() => { setInGame(false); setTimeout(() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+          />
+        </Suspense>
+      )}
 
       <AnimatePresence>{showResume && <ResumeMode onClose={() => setShowResume(false)} />}</AnimatePresence>
     </div>
