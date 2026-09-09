@@ -5,7 +5,6 @@ export function GithubIcon({ size = 16 }: { size?: number }) {
     </svg>
   )
 }
-
 export function LinkedinIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
