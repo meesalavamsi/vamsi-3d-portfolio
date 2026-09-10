@@ -61,6 +61,15 @@ const frame = new THREE.MeshStandardMaterial({ color: '#3c4149', roughness: 0.6,
 const metal = new THREE.MeshStandardMaterial({ color: '#6d737c', roughness: 0.5, metalness: 0.55 })
 const rubber = new THREE.MeshStandardMaterial({ color: '#15171b', roughness: 0.9 })
 const glassM = new THREE.MeshStandardMaterial({ color: '#0f1a24', roughness: 0.15, metalness: 0.5 })
+/* Shelter panes are see-through, not black mirrors. */
+const paneM = new THREE.MeshStandardMaterial({
+  color: '#aec4d6',
+  roughness: 0.08,
+  metalness: 0.15,
+  transparent: true,
+  opacity: 0.26,
+  depthWrite: false,
+})
 const lineM = new THREE.MeshStandardMaterial({ color: '#d3d6da', roughness: 0.75 })
 /* A lit shop interior seen through glass, painted once and shared. */
 const shopGlow = (() => {
@@ -451,9 +460,10 @@ function BusStop({ night, busy }: { night: number; busy: boolean }) {
         <mesh key={o} geometry={BOX} material={metal} position={[o, 1.3, -0.8]} scale={[0.12, 2.6, 0.12]} castShadow />
       ))}
       <mesh geometry={BOX} material={metal} position={[0, 2.66, -0.1]} scale={[5, 0.12, 2.2]} castShadow />
-      <mesh geometry={BOX} material={glassM} position={[0, 1.4, 0.82]} scale={[5, 2.5, 0.06]} />
+      <mesh geometry={BOX} material={paneM} position={[0, 1.4, 0.82]} scale={[5, 2.5, 0.06]} />
       <mesh geometry={BOX} material={frame} position={[-1.9, 1.4, -0.86]} scale={[1.3, 2.4, 0.14]} />
-      <mesh geometry={PLANE} material={ad} position={[-1.9, 1.4, -0.78]} scale={[1.1, 2.1, 1]} rotation={[0, Math.PI, 0]} />
+      {/* the ad faces the plaza, which is where the people are */}
+      <mesh geometry={PLANE} material={ad} position={[-1.9, 1.4, -0.78]} scale={[1.1, 2.1, 1]} />
       <mesh geometry={BOX} material={frame} position={[1, 0.48, -0.4]} scale={[2.4, 0.1, 0.5]} castShadow />
       {[-0.1, 2.1].map((o) => (
         <mesh key={o} geometry={BOX} material={metal} position={[o, 0.25, -0.4]} scale={[0.09, 0.42, 0.42]} />
