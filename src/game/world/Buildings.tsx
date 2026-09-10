@@ -7,6 +7,83 @@ import { zones, type Zone } from '../data/zones'
 
 const winGeo = new THREE.BoxGeometry(1, 1, 0.06)
 
+/* A lit ground-floor lobby seen through the entrance glass, painted once
+   and shared by every building. Tinted per zone through `emissive`. */
+const lobbyTex = (() => {
+  const W = 384
+  const H = 272
+  const c = document.createElement('canvas')
+  c.width = W
+  c.height = H
+  const x = c.getContext('2d')!
+  // back wall, washed by the ceiling light and falling off toward the floor
+  const g = x.createLinearGradient(0, 0, 0, H)
+  g.addColorStop(0, '#7c818c')
+  g.addColorStop(0.3, '#5e636d')
+  g.addColorStop(0.72, '#3b4048')
+  g.addColorStop(1, '#24272d')
+  x.fillStyle = g
+  x.fillRect(0, 0, W, H)
+  // ceiling light troughs
+  x.fillStyle = 'rgba(255,243,219,0.9)'
+  x.fillRect(0, 8, W, 10)
+  x.fillStyle = 'rgba(255,243,219,0.4)'
+  x.fillRect(0, 36, W, 5)
+  // twin lift doors on the rear wall
+  x.fillStyle = '#2f343c'
+  x.fillRect(38, 64, 66, 116)
+  x.fillRect(280, 64, 66, 116)
+  x.fillStyle = 'rgba(255,255,255,0.1)'
+  x.fillRect(70, 64, 2, 116)
+  x.fillRect(312, 64, 2, 116)
+  x.fillStyle = 'rgba(255,236,196,0.22)'
+  x.fillRect(52, 54, 38, 5)
+  x.fillRect(294, 54, 38, 5)
+  // back-lit directory panel between the lifts
+  const d = x.createLinearGradient(0, 76, 0, 132)
+  d.addColorStop(0, 'rgba(210,226,248,0.3)')
+  d.addColorStop(1, 'rgba(160,180,205,0.12)')
+  x.fillStyle = d
+  x.fillRect(146, 76, 92, 56)
+  x.fillStyle = 'rgba(240,248,255,0.22)'
+  for (let i = 0; i < 5; i++) x.fillRect(154, 86 + i * 10, 54 + ((i * 17) % 24), 3)
+  // reception counter running across the room
+  x.fillStyle = '#1e2127'
+  x.fillRect(0, 164, W, 34)
+  x.fillStyle = 'rgba(255,233,194,0.5)'
+  x.fillRect(0, 160, W, 4)
+  // a receptionist behind the desk
+  x.fillStyle = 'rgba(15,17,21,0.74)'
+  x.beginPath()
+  x.arc(86, 142, 12, 0, Math.PI * 2)
+  x.fill()
+  x.fillRect(72, 153, 28, 16)
+  // polished floor with the troughs reflected in it
+  x.fillStyle = '#181b20'
+  x.fillRect(0, 198, W, H - 198)
+  x.fillStyle = 'rgba(255,239,208,0.14)'
+  x.fillRect(0, 206, W, 30)
+  x.fillStyle = 'rgba(255,239,208,0.06)'
+  x.fillRect(0, 244, W, 22)
+  // a visitor standing on this side of the counter
+  x.fillStyle = 'rgba(12,14,18,0.8)'
+  x.beginPath()
+  x.arc(268, 120, 13, 0, Math.PI * 2)
+  x.fill()
+  x.fillRect(254, 132, 28, 74)
+  // glass sheen across the pane
+  const r = x.createLinearGradient(0, H, W, 0)
+  r.addColorStop(0, 'rgba(255,255,255,0)')
+  r.addColorStop(0.46, 'rgba(214,232,255,0.14)')
+  r.addColorStop(0.58, 'rgba(214,232,255,0.03)')
+  r.addColorStop(1, 'rgba(255,255,255,0)')
+  x.fillStyle = r
+  x.fillRect(0, 0, W, H)
+  const t = new THREE.CanvasTexture(c)
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+})()
+
 function WindowGrid({
   w, h, d, night, tint = '#ffd9a0', density = 0.62,
 }: {
@@ -134,11 +211,13 @@ export function ZoneBuilding({
   const doorGlass = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: '#111922',
-        emissive: new THREE.Color(zone.color),
-        emissiveIntensity: 0.05,
-        roughness: 0.12,
-        metalness: 0.6,
+        map: lobbyTex,
+        emissiveMap: lobbyTex,
+        color: '#8f9aa6',
+        emissive: new THREE.Color('#ffffff'),
+        emissiveIntensity: 0.4,
+        roughness: 0.2,
+        metalness: 0.3,
       }),
     [zone.color],
   )
@@ -154,8 +233,9 @@ export function ZoneBuilding({
   )
   // mutate rather than rebuild: `night` ticks several times a second
   useLayoutEffect(() => {
-    doorGlass.emissive.set(done ? '#4ade80' : zone.color)
-    doorGlass.emissiveIntensity = (done ? 0.07 : active ? 0.09 : 0.035) + night * 0.5
+    // the lobby image carries the detail; the accent only tints it
+    doorGlass.emissive.set(done ? '#dcffe8' : '#fff4e2')
+    doorGlass.emissiveIntensity = (done ? 0.5 : active ? 0.52 : 0.42) + night * 0.42
     signMat.emissive.set(done ? '#4ade80' : zone.color)
     signMat.emissiveIntensity = (done ? 0.75 : active ? 1.05 : 0.55) + night * 1.9
   }, [doorGlass, signMat, done, active, night, zone.color])
@@ -185,11 +265,9 @@ export function ZoneBuilding({
         <mesh material={concreteDark} position={[0, 1.85, 0.14]} castShadow receiveShadow>
           <boxGeometry args={[5.1, 3.7, 0.36]} />
         </mesh>
-        <mesh material={doorGlass} position={[-1.06, 1.52, 0.34]}>
-          <boxGeometry args={[1.86, 2.84, 0.08]} />
-        </mesh>
-        <mesh material={doorGlass} position={[1.06, 1.52, 0.34]}>
-          <boxGeometry args={[1.86, 2.84, 0.08]} />
+        {/* one pane, visually split by the centre mullion in front of it */}
+        <mesh material={doorGlass} position={[0, 1.52, 0.34]}>
+          <boxGeometry args={[3.98, 2.84, 0.08]} />
         </mesh>
         <mesh material={trimMat} position={[0, 1.55, 0.4]}>
           <boxGeometry args={[0.16, 2.94, 0.14]} />

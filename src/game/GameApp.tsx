@@ -3,9 +3,10 @@ import { useGame } from './state'
 import { attachKeyboard, input, resetInput } from './input'
 import { BriefScreen, ReportScreen, TitleScreen } from './ui/Screens'
 import ScenarioPanel from './ui/Scenario'
-import { ControlHint, MiniMap, Objectives, Prompt, TopBar } from './ui/Hud'
+import { ControlHint, InsideBar, MiniMap, Objectives, PendingHint, Prompt, TopBar } from './ui/Hud'
 import TouchControls from './ui/TouchControls'
 import { zones } from './data/zones'
+import { interiors } from './data/interiors'
 
 const Scene = lazy(() => import('./world/Scene'))
 
@@ -57,9 +58,10 @@ function NoWebGL() {
 
 export default function GameApp() {
   const phase = useGame((s) => s.phase)
-  const openScenario = useGame((s) => s.openScenario)
   const completed = useGame((s) => s.completed)
   const finish = useGame((s) => s.finish)
+  const inside = useGame((s) => s.inside)
+  const exitAt = useGame((s) => s.exitAt)
   const [near, setNear] = useState<string | null>(null)
   const nearRef = useRef<string | null>(null)
   const [webgl] = useState(hasWebGL)
@@ -81,12 +83,43 @@ export default function GameApp() {
     ;(window as unknown as { __game?: unknown; __input?: unknown }).__input = input
   }, [])
 
+  /* One key for everything: doors on the street, hotspots inside. */
   const tryInteract = useCallback(() => {
     const id = nearRef.current
-    if (!id || completed.includes(id)) return
+    if (!id) return
+    const g = useGame.getState()
+
+    if (!g.inside) {
+      resetInput()
+      g.enterBuilding(id)
+      return
+    }
+
+    const spot = interiors[g.inside]?.spots.find((s) => s.id === id)
+    if (!spot) return
+    if (spot.kind === 'exit') {
+      resetInput()
+      g.leaveBuilding()
+      return
+    }
+    if (!spot.scenario) return
+    if (spot.kind === 'resume') {
+      if (g.pending?.scenario === spot.scenario) {
+        resetInput()
+        g.resumeScenario()
+      }
+      return
+    }
+    if (g.completed.includes(spot.scenario)) return
     resetInput()
-    openScenario(id)
-  }, [completed, openScenario])
+    g.openScenario(spot.scenario)
+  }, [])
+
+  /* Point the camera sensibly whenever the world changes under you. */
+  useEffect(() => {
+    input.yaw = inside ? Math.PI : (exitAt?.facing ?? Math.PI)
+    input.pitch = inside ? 0.2 : 0.28
+  }, [inside, exitAt])
 
   // keyboard
   useEffect(() => {
@@ -155,8 +188,9 @@ export default function GameApp() {
         <>
           <TopBar onExit={() => (window.location.href = '/')} onFinish={finish} />
           <Objectives />
-          <MiniMap />
+          {inside ? <InsideBar /> : <MiniMap />}
           <ControlHint />
+          <PendingHint />
           <Prompt near={near} onInteract={tryInteract} />
           {quality === 'low' && <TouchControls onInteract={tryInteract} />}
           {completed.length === zones.length && (
@@ -170,7 +204,7 @@ export default function GameApp() {
                   backdropFilter: 'blur(8px)',
                 }}
               >
-                All five handled — collect your review
+                All {zones.length} handled — collect your review
               </div>
             </div>
           )}

@@ -60,6 +60,16 @@ export const zones: Zone[] = [
     color: '#60a5fa',
     order: 5,
   },
+  {
+    id: 'hackathon',
+    label: 'INNOVATION HALL',
+    sub: '36-Hour Hackathon',
+    pos: [2, -32],
+    door: [2, -17],
+    size: [20, 14, 22],
+    color: '#f472b6',
+    order: 6,
+  },
 ]
 
 /** Rectangles the player cannot walk through (x, z, halfW, halfD). */

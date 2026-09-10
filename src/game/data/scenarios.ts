@@ -19,6 +19,9 @@ export type Step = {
   line: string
   question: string
   seconds?: number       // real-time pressure; omit for untimed
+  /** break off here and finish the scenario at another hotspot in the building */
+  resumeAt?: string
+  resumeHint?: string
   choices: Choice[]
 }
 
@@ -519,6 +522,186 @@ export const scenarios: Scenario[] = [
     ],
     closer:
       'Review is not about catching typos. It is about catching the thing that only appears at production scale.',
+  },
+
+  // ── 6. HACKATHON ──────────────────────────────────────────
+  {
+    id: 'hackathon',
+    zone: 'hackathon',
+    order: 6,
+    title: 'Thirty-Six Hours',
+    place: 'Innovation Hall',
+    tag: 'Hackathon · scope, crunch, pitch',
+    accent: '#f472b6',
+    brief:
+      'Forty-two teams, one hall, thirty-six hours. Your team of four picked the idea you know best: one live dashboard for a solar inverter array. Four hours are left on the clock and three things are still unfinished.',
+    basedOn: 'Smart Inverter Monitoring & Control — the dashboard project, built under a deadline',
+    steps: [
+      {
+        id: 'scope',
+        speaker: 'Harsha',
+        role: 'Teammate · frontend',
+        line: "Four hours left. The live chart works, the alert rule is half-done, and the login page is ugly. What do we finish?",
+        question: 'Where do the last four hours go?',
+        seconds: 24,
+        choices: [
+          {
+            id: 'thread',
+            label: 'Finish the alert rule — one story, end to end',
+            detail: 'Reading drops → threshold trips → someone gets told',
+            score: 3,
+            best: true,
+            verdict:
+              'Right. A demo is one story told without gaps. Live reading → threshold → alert is the whole point of the project; the login page is not.',
+          },
+          {
+            id: 'all',
+            label: 'Split up and try to land all three',
+            score: 0,
+            verdict:
+              'Three half-features is a broken demo. At hour 35 you find out nothing quite connects, and there is no time left to choose.',
+          },
+          {
+            id: 'polish',
+            label: 'Make the UI beautiful — judges see it first',
+            score: -1,
+            verdict:
+              'Judges look at the screen, then ask what it does. Polish on top of a missing feature just makes the gap easier to see.',
+          },
+          {
+            id: 'rewrite',
+            label: 'Rewrite the poller properly with a queue',
+            score: -2,
+            verdict:
+              'Correct engineering, wrong hour. A rewrite at hour 32 is how teams arrive at judging with nothing that runs.',
+          },
+        ],
+      },
+      {
+        id: 'crunch',
+        speaker: 'Sai',
+        role: 'Teammate · backend',
+        line: "It's 3am. The vendor's device API just started throwing 502s. Our whole demo reads from it.",
+        question: 'The demo is in fifteen hours. What do you do?',
+        seconds: 22,
+        resumeAt: 'hack-stage',
+        resumeHint: "Shortlisted. Judges are hearing pitches at the front of the hall — walk up to the stage.",
+        choices: [
+          {
+            id: 'replay',
+            label: 'Add a recorded-data mode and say so on stage',
+            detail: 'Same code path, replayed readings, labelled clearly',
+            score: 3,
+            best: true,
+            verdict:
+              'This is the professional answer. The system still runs end to end, the failure is isolated behind one interface, and you are honest about which data is live.',
+          },
+          {
+            id: 'hardcode',
+            label: 'Hardcode nice-looking numbers and say nothing',
+            score: -2,
+            verdict:
+              'One question from a judge — "is this reading live?" — and you either lie or lose the room. Never demo something you cannot explain.',
+          },
+          {
+            id: 'chase',
+            label: 'Spend the night getting the vendor API back',
+            score: 0,
+            verdict:
+              'You cannot fix someone else\'s outage. Six hours gone and the thing you control is no further along.',
+          },
+          {
+            id: 'drop',
+            label: 'Cut the live element from the demo entirely',
+            score: 1,
+            verdict:
+              'Safe, but you just removed the reason the project is interesting. There was a way to keep it.',
+          },
+        ],
+      },
+      {
+        id: 'pitch',
+        speaker: 'Dr. Rao',
+        role: 'Head judge',
+        line: 'You have three minutes. Start wherever you like.',
+        question: 'How do you open the pitch?',
+        seconds: 22,
+        choices: [
+          {
+            id: 'outcome',
+            label: 'Start with the problem and the number it moves',
+            detail: '"Twenty-four inverters, checked by hand. We cut that to one screen."',
+            score: 3,
+            best: true,
+            verdict:
+              'Exactly. Judges are deciding whether the problem is real. Lead with the person whose day gets better, then show the screen that does it.',
+          },
+          {
+            id: 'stack',
+            label: 'Walk through the architecture diagram first',
+            score: 1,
+            verdict:
+              'Solid, but you have spent a minute of three on how before anyone agreed on why. Architecture is the answer to a question they have not asked yet.',
+          },
+          {
+            id: 'live',
+            label: 'Open by unplugging a device live on stage',
+            score: 2,
+            verdict:
+              'Bold, and it does prove the alert path — but a stunt before the framing means half the room is still working out what they are watching.',
+          },
+          {
+            id: 'roadmap',
+            label: 'Pitch the twelve-month roadmap',
+            score: -1,
+            verdict:
+              'Nobody funds a roadmap at a hackathon. They are marking what you built in thirty-six hours.',
+          },
+        ],
+      },
+      {
+        id: 'grilled',
+        speaker: 'Dr. Rao',
+        role: 'Head judge',
+        line: "Nice. Now — this polls twenty-four devices. What happens at two thousand?",
+        question: 'Answer the hard question.',
+        seconds: 24,
+        choices: [
+          {
+            id: 'honest',
+            label: 'Name the bottleneck, then the fix',
+            detail: '"Sequential polling. It becomes a queue with workers and batched writes."',
+            score: 3,
+            best: true,
+            verdict:
+              'That is the answer that gets you hired. You know where it breaks, you know why, and you know the shape of the fix — without pretending the prototype already is it.',
+          },
+          {
+            id: 'scales',
+            label: 'Say it scales fine as built',
+            score: -2,
+            verdict:
+              'The judge has read your code. Overclaiming costs you more than the limitation ever would.',
+          },
+          {
+            id: 'hardware',
+            label: 'Say that is the hardware vendor\'s problem',
+            score: -1,
+            verdict:
+              'Deflecting a design question reads as not having thought about it. The polling loop is yours.',
+          },
+          {
+            id: 'later',
+            label: 'Say you would benchmark it before answering',
+            score: 1,
+            verdict:
+              'Honest, and better than guessing — but you already know it is sequential I/O. Say the thing you know, then say what you would measure.',
+          },
+        ],
+      },
+    ],
+    closer:
+      'Thirty-six hours does not test how much you can build. It tests whether you can pick the one thing worth building, keep it honest when a dependency dies at 3am, and explain it to someone who has ninety seconds and four other teams to see.',
   },
 ]
 

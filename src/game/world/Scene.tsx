@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Sky, Stars, AdaptiveDpr, Preload } from '@react-three/drei'
 import * as THREE from 'three'
@@ -6,7 +6,9 @@ import City from './City'
 import { AllBuildings } from './Buildings'
 import Crowd from './Crowd'
 import Markers from './Markers'
-import Player from './Player'
+import Player, { cityWorld, type WorldCfg } from './Player'
+import Interior from './Interior'
+import { interiors, interiorWorld } from '../data/interiors'
 import { useGame } from '../state'
 
 /* Lighting rig + day→night cycle driven by mission progress. */
@@ -119,7 +121,14 @@ function Rig({ onNight }: { onNight: (n: number) => void }) {
   )
 }
 
-function World({ onNear, quality }: { onNear: (id: string | null) => void; quality: 'high' | 'low' }) {
+function CityWorld({
+  onNear, quality, world, worldKey,
+}: {
+  onNear: (id: string | null) => void
+  quality: 'high' | 'low'
+  world: WorldCfg
+  worldKey: string
+}) {
   const completed = useGame((s) => s.completed)
   const quiet = useGame((s) => s.phase !== 'playing')
   const [night, setNight] = useState(0)
@@ -134,12 +143,69 @@ function World({ onNear, quality }: { onNear: (id: string | null) => void; quali
       <Crowd density={quality === 'high' ? 1 : 0.4} />
       <Markers completed={completed} near={near} />
       <Player
+        key={worldKey}
+        world={world}
         onNear={(id) => {
           setNear(id)
           onNear(id)
         }}
       />
     </>
+  )
+}
+
+function InteriorWorld({
+  id, onNear, world, quality,
+}: {
+  id: string
+  onNear: (id: string | null) => void
+  world: WorldCfg
+  quality: 'high' | 'low'
+}) {
+  const [near, setNear] = useState<string | null>(null)
+  return (
+    <>
+      <Interior id={id} near={near} quality={quality} />
+      <Player
+        key={`in-${id}`}
+        world={world}
+        onNear={(v) => {
+          setNear(v)
+          onNear(v)
+        }}
+      />
+    </>
+  )
+}
+
+function World({ onNear, quality }: { onNear: (id: string | null) => void; quality: 'high' | 'low' }) {
+  const inside = useGame((s) => s.inside)
+  const exitAt = useGame((s) => s.exitAt)
+  const stage = useGame((s) => s.hackStage)
+
+  // the hotspot under your feet never carries over between worlds
+  useEffect(() => {
+    onNear(null)
+  }, [inside, onNear])
+
+  const world = useMemo<WorldCfg>(() => {
+    const def = inside ? interiors[inside] : undefined
+    if (def) return interiorWorld(def, stage)
+    return exitAt
+      ? { ...cityWorld, spawn: exitAt.at, facing: exitAt.facing }
+      : cityWorld
+  }, [inside, stage, exitAt])
+
+  if (inside && interiors[inside])
+    return <InteriorWorld id={inside} onNear={onNear} world={world} quality={quality} />
+
+  return (
+    <CityWorld
+      onNear={onNear}
+      quality={quality}
+      world={world}
+      worldKey={`city-${exitAt?.key ?? 0}`}
+    />
   )
 }
 

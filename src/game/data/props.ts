@@ -1,6 +1,22 @@
 import { zones } from './zones'
+import { streetColliders } from './street'
 
 /** Keep street furniture off the objective markers and the paths leading to them. */
+/** Nothing should be planted inside a building. */
+function insideBuilding(x: number, z: number, pad: number) {
+  for (const zn of zones) {
+    if (
+      Math.abs(x - zn.pos[0]) < zn.size[0] / 2 + pad &&
+      Math.abs(z - zn.pos[1]) < zn.size[2] / 2 + pad
+    )
+      return true
+  }
+  for (const [cx, cz, hw, hd] of streetColliders) {
+    if (Math.abs(x - cx) < hw + pad && Math.abs(z - cz) < hd + pad) return true
+  }
+  return false
+}
+
 function blocksWayfinding(x: number, z: number, pad: number) {
   for (const zn of zones) {
     const [dx, dz] = zn.door
@@ -37,11 +53,14 @@ const RING_TREES: [number, number][] = Array.from({ length: 30 }, (_, i) => {
   return [Math.round(Math.cos(a) * r), Math.round(Math.sin(a) * r)]
 })
 
-const clear = (list: [number, number][]) => list.filter(([x, z]) => !blocksWayfinding(x, z, 3.1))
+const clear = (list: [number, number][]) =>
+  list.filter(([x, z]) => !blocksWayfinding(x, z, 3.1) && !insideBuilding(x, z, 1.6))
 
 export const treeSpots = clear(RAW_TREES)
 export const edgeTreeSpots = clear(RING_TREES)
-export const lampSpots = RAW_LAMPS.filter(([x, z]) => !blocksWayfinding(x, z, 2.4))
+export const lampSpots = RAW_LAMPS.filter(
+  ([x, z]) => !blocksWayfinding(x, z, 2.4) && !insideBuilding(x, z, 1.2),
+)
 
 /** Round obstacles the third-person camera must not push through: x, z, radius. */
 export const camObstacles: [number, number, number][] = [

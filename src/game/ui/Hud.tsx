@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useGame } from '../state'
 import { zones } from '../data/zones'
+import { interiors } from '../data/interiors'
 import { scenarios } from '../data/scenarios'
 
 /* Minimal in-world HUD: objectives, progress, minimap, prompt. */
@@ -127,40 +128,126 @@ export function MiniMap() {
 
 export function Prompt({ near, onInteract }: { near: string | null; onInteract: () => void }) {
   const completed = useGame((s) => s.completed)
-  const zone = zones.find((z) => z.id === near)
-  const scen = scenarios.find((s) => s.zone === near || s.id === near)
-  const done = near ? completed.includes(near) : false
+  const inside = useGame((s) => s.inside)
+  const pending = useGame((s) => s.pending)
 
-  if (!zone) return null
+  let color = '#f0b429'
+  let label = ''
+  let title = ''
+  let disabled = false
+  let hint: string | null = 'Press E · or tap here'
+
+  if (!near) return null
+
+  if (!inside) {
+    const zone = zones.find((z) => z.id === near)
+    if (!zone) return null
+    const done = completed.includes(zone.id)
+    const scen = scenarios.find((s) => s.zone === zone.id)
+    color = done ? '#4ade80' : zone.color
+    label = done ? 'Handled ✓' : zone.label
+    title = done ? 'Go back inside' : (scen?.title ?? 'Go inside')
+  } else {
+    const def = interiors[inside]
+    const spot = def?.spots.find((s) => s.id === near)
+    if (!def || !spot) return null
+    if (spot.kind === 'exit') {
+      color = '#9ca0a8'
+      label = 'Way out'
+      title = 'Step back onto the street'
+    } else if (spot.kind === 'resume') {
+      const live = pending?.scenario === spot.scenario
+      color = def.accent
+      label = spot.label
+      title = live ? 'Take the stage' : 'Nothing happening up here yet'
+      disabled = !live
+      if (!live) hint = null
+    } else {
+      const done = !!spot.scenario && completed.includes(spot.scenario)
+      const scen = scenarios.find((s) => s.id === spot.scenario)
+      color = done ? '#4ade80' : def.accent
+      label = done ? 'Handled ✓' : spot.label
+      title = done ? 'Nothing left to do here' : (scen?.title ?? spot.sub)
+      disabled = done
+      if (done) hint = null
+    }
+  }
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-24 z-30 flex justify-center px-4 sm:bottom-28">
       <button
         onClick={onInteract}
-        disabled={done}
+        disabled={disabled}
         className="pointer-events-auto rounded-xl border px-5 py-3 text-center transition-transform active:scale-[0.98]"
         style={{
-          borderColor: done ? '#4ade8055' : zone.color + '77',
+          borderColor: color + '77',
           background: 'rgba(8,10,14,0.82)',
           backdropFilter: 'blur(10px)',
           animation: 'g-rise 0.25s ease',
         }}
       >
-        <div
-          className="font-mono text-[0.58rem] uppercase tracking-[0.18em]"
-          style={{ color: done ? '#4ade80' : zone.color }}
-        >
-          {done ? 'Completed ✓' : zone.label}
+        <div className="font-mono text-[0.58rem] uppercase tracking-[0.18em]" style={{ color }}>
+          {label}
         </div>
-        <div className="mt-1 text-[0.9rem] font-medium text-[#fafaf9]">
-          {done ? 'Nothing left to do here' : scen?.title ?? 'Enter'}
-        </div>
-        {!done && (
+        <div className="mt-1 text-[0.9rem] font-medium text-[#fafaf9]">{title}</div>
+        {hint && (
           <div className="mt-1.5 font-mono text-[0.62rem] text-[#9ca0a8]">
             Press <span className="text-[#f0b429]">E</span> · or tap here
           </div>
         )}
       </button>
+    </div>
+  )
+}
+
+/** Replaces the minimap while you are indoors. */
+export function InsideBar() {
+  const inside = useGame((s) => s.inside)
+  const leave = useGame((s) => s.leaveBuilding)
+  const def = inside ? interiors[inside] : undefined
+  if (!def) return null
+  return (
+    <div className="pointer-events-none fixed bottom-3 right-3 z-30 hidden sm:block">
+      <div
+        className="pointer-events-auto rounded-xl border px-3.5 py-3 text-right"
+        style={{ borderColor: '#ffffff1a', background: 'rgba(8,10,14,0.66)', backdropFilter: 'blur(10px)' }}
+      >
+        <div className="font-mono text-[0.56rem] uppercase tracking-[0.18em]" style={{ color: def.accent }}>
+          Inside
+        </div>
+        <div className="mt-0.5 text-[0.82rem] font-medium text-[#fafaf9]">{def.title}</div>
+        <button
+          onClick={leave}
+          className="mt-2 rounded-full border px-3 py-1 font-mono text-[0.58rem] uppercase tracking-[0.14em] text-[#9ca0a8] transition-colors hover:text-[#fafaf9]"
+          style={{ borderColor: '#ffffff22' }}
+        >
+          Leave building
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** A scenario that broke off and is waiting for you somewhere else in the room. */
+export function PendingHint() {
+  const pending = useGame((s) => s.pending)
+  if (!pending?.hint) return null
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-[8.6rem] z-30 flex justify-center px-4 sm:top-[5.5rem]">
+      <div
+        className="max-w-md rounded-xl border px-4 py-2.5 text-center"
+        style={{
+          borderColor: '#f472b655',
+          background: 'rgba(8,10,14,0.84)',
+          backdropFilter: 'blur(10px)',
+          animation: 'g-rise 0.3s ease',
+        }}
+      >
+        <div className="font-mono text-[0.56rem] uppercase tracking-[0.18em] text-[#f472b6]">
+          Scenario paused
+        </div>
+        <div className="mt-1 text-[0.82rem] leading-snug text-[#d4d8de]">{pending.hint}</div>
+      </div>
     </div>
   )
 }
@@ -212,7 +299,7 @@ export function ControlHint() {
       ['W A S D', 'Move'],
       ['Shift', 'Run'],
       ['Drag', 'Look'],
-      ['E', 'Interact'],
+      ['E', 'Enter / act'],
     ],
     [],
   )

@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Bench, Birds, StreetLight, Traffic, TreeField } from './Props'
+import Street from './Street'
 import { zones } from '../data/zones'
 import { edgeTreeSpots, lampSpots, treeSpots } from '../data/props'
 
@@ -165,6 +166,7 @@ export default function City({ night, quality }: { night: number; quality: 'high
       <Bench at={[9.4, 10.4]} rot={Math.PI} />
       <Bench at={[-9.2, -6]} rot={0} />
 
+      <Street night={night} quality={quality} />
       <Traffic night={night} count={quality === 'high' ? 6 : 3} />
       {quality === 'high' && <Birds />}
     </group>

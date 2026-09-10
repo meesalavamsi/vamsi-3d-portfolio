@@ -13,7 +13,8 @@ export default function ScenarioPanel() {
   const closeScenario = useGame((s) => s.closeScenario)
 
   const sc = scenarioById(activeId)
-  const [phase, setPhase] = useState<'brief' | 'ask'>('brief')
+  // a scenario that paused and resumed elsewhere should pick up where it left off
+  const [phase, setPhase] = useState<'brief' | 'ask'>(() => (stepIndex > 0 ? 'ask' : 'brief'))
   const [left, setLeft] = useState(0)
   const answered = useRef(false)
 
@@ -22,7 +23,7 @@ export default function ScenarioPanel() {
 
   // reset when a new scenario opens
   useEffect(() => {
-    setPhase('brief')
+    setPhase(useGame.getState().stepIndex > 0 ? 'ask' : 'brief')
   }, [activeId])
 
   // countdown

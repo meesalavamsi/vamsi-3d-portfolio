@@ -5,11 +5,45 @@ import Human, { type Look } from './Human'
 import { input } from '../input'
 import { colliders, zones } from '../data/zones'
 import { camObstacles } from '../data/props'
+import { streetColliders } from '../data/street'
 import { useGame } from '../state'
 
-const WORLD = 45
 const RADIUS = 0.45
-const CAM_DIST = 7.4
+
+export type Target = { id: string; at: [number, number] }
+
+export type WorldCfg = {
+  /** where the player is dropped in */
+  spawn: [number, number]
+  /** radial clamp (outdoors) */
+  radius?: number
+  /** half-extents of a rectangular room (indoors) */
+  rect?: [number, number]
+  /** height of the room, so the camera stays under the ceiling */
+  ceiling?: number
+  /** x, z, halfW, halfD */
+  colliders: [number, number, number, number][]
+  /** x, z, radius — round things the camera should not clip through */
+  obstacles?: [number, number, number][]
+  targets: Target[]
+  /** how close you have to be for the prompt */
+  reach?: number
+  camDist?: number
+  indoor?: boolean
+  /** starting facing, radians */
+  facing?: number
+}
+
+
+export const cityWorld: WorldCfg = {
+  spawn: [0, 11],
+  radius: 45,
+  colliders: [...colliders, ...streetColliders],
+  obstacles: camObstacles,
+  targets: zones.map((z) => ({ id: z.id, at: z.door })),
+  reach: 4.6,
+  camDist: 7.4,
+}
 
 export const playerLook: Look = {
   skin: '#d6a077',
@@ -18,12 +52,20 @@ export const playerLook: Look = {
   hair: '#181510',
   height: 1.02,
   bag: true,
+  style: 'short',
 }
 
-export default function Player({ onNear }: { onNear: (id: string | null) => void }) {
+export default function Player({
+  world,
+  onNear,
+}: {
+  world: WorldCfg
+  onNear: (id: string | null) => void
+}) {
+  const CAM_DIST = world.camDist || 7.4
   const g = useRef<THREE.Group>(null)
   const vel = useRef(new THREE.Vector2())
-  const yawRef = useRef(0)
+  const yawRef = useRef(world.facing ?? 0)
   const gaitRef = useRef(0)
   const camTarget = useRef(new THREE.Vector3(0, 1.4, 8))
   const camDist = useRef(CAM_DIST)
@@ -33,10 +75,11 @@ export default function Player({ onNear }: { onNear: (id: string | null) => void
   const posTick = useRef(0)
   const { camera } = useThree()
 
-  const doors = useMemo(
-    () => zones.map((z) => ({ id: z.id, v: new THREE.Vector2(z.door[0], z.door[1]) })),
-    [],
+  const targets = useMemo(
+    () => world.targets.map((t) => ({ id: t.id, v: new THREE.Vector2(t.at[0], t.at[1]) })),
+    [world],
   )
+  const reach = world.reach ?? 4.6
 
   useFrame((state, dtRaw) => {
     const dt = Math.min(dtRaw, 0.085)
@@ -48,7 +91,9 @@ export default function Player({ onNear }: { onNear: (id: string | null) => void
     const cy = input.yaw
     const moveVec = new THREE.Vector2(input.s, input.f)
     if (moveVec.lengthSq() > 1) moveVec.normalize()
-    const speed = (input.sprint ? 5.8 : 3.2) * (moveVec.lengthSq() > 0.0001 ? 1 : 0)
+    const top = world.indoor ? 2.5 : 3.2
+    const run = world.indoor ? 4.2 : 5.8
+    const speed = (input.sprint ? run : top) * (moveVec.lengthSq() > 0.0001 ? 1 : 0)
 
     const wx = moveVec.y * Math.sin(cy) - moveVec.x * Math.cos(cy)
     const wz = moveVec.y * Math.cos(cy) + moveVec.x * Math.sin(cy)
@@ -59,8 +104,8 @@ export default function Player({ onNear }: { onNear: (id: string | null) => void
     let nx = grp.position.x + vel.current.x * dt
     let nz = grp.position.z + vel.current.y * dt
 
-    // ── collision: push out of building footprints ──
-    for (const [cx, cz, hw, hd] of colliders) {
+    // ── collision: push out of footprints ──
+    for (const [cx, cz, hw, hd] of world.colliders) {
       const dx = nx - cx
       const dz = nz - cz
       if (Math.abs(dx) < hw + RADIUS && Math.abs(dz) < hd + RADIUS) {
@@ -70,11 +115,18 @@ export default function Player({ onNear }: { onNear: (id: string | null) => void
         else nz = cz + Math.sign(dz || 1) * (hd + RADIUS)
       }
     }
-    // keep the player inside the district rather than out on blank grass
-    const rr = Math.hypot(nx, nz)
-    if (rr > WORLD) {
-      nx = (nx / rr) * WORLD
-      nz = (nz / rr) * WORLD
+    if (world.rect) {
+      // inside a room: square walls
+      const [hw, hd] = world.rect
+      nx = THREE.MathUtils.clamp(nx, -hw + RADIUS, hw - RADIUS)
+      nz = THREE.MathUtils.clamp(nz, -hd + RADIUS, hd - RADIUS)
+    } else if (world.radius) {
+      // keep the player inside the district rather than out on blank grass
+      const rr = Math.hypot(nx, nz)
+      if (rr > world.radius) {
+        nx = (nx / rr) * world.radius
+        nz = (nz / rr) * world.radius
+      }
     }
     grp.position.set(nx, 0, nz)
 
@@ -101,30 +153,35 @@ export default function Player({ onNear }: { onNear: (id: string | null) => void
     const dirZ = -Math.cos(input.yaw) * cosP
 
     let want = CAM_DIST
-    for (let s = 1.6; s <= CAM_DIST; s += 0.45) {
+    for (let s = 1.5; s <= CAM_DIST; s += 0.4) {
       const px = nx + dirX * s
       const pz = nz + dirZ * s
       let hit = false
-      for (const [cx, cz, hw, hd] of colliders) {
-        // colliders carry player padding; shrink it back so the camera can
-        // hug an outside wall without snapping in
-        if (Math.abs(px - cx) < hw - 0.3 && Math.abs(pz - cz) < hd - 0.3) {
-          hit = true
-          break
-        }
-      }
-      if (!hit) {
-        for (const [cx, cz, r] of camObstacles) {
-          const ox = px - cx
-          const oz = pz - cz
-          if (ox * ox + oz * oz < r * r) {
+      if (world.rect) {
+        const [hw, hd] = world.rect
+        if (Math.abs(px) > hw - 0.3 || Math.abs(pz) > hd - 0.3) hit = true
+      } else {
+        for (const [cx, cz, hw, hd] of world.colliders) {
+          // colliders carry player padding; shrink it back so the camera can
+          // hug an outside wall without snapping in
+          if (Math.abs(px - cx) < hw - 0.3 && Math.abs(pz - cz) < hd - 0.3) {
             hit = true
             break
           }
         }
+        if (!hit && world.obstacles) {
+          for (const [cx, cz, r] of world.obstacles) {
+            const ox = px - cx
+            const oz = pz - cz
+            if (ox * ox + oz * oz < r * r) {
+              hit = true
+              break
+            }
+          }
+        }
       }
       if (hit) {
-        want = Math.max(2.1, s - 0.5)
+        want = Math.max(world.indoor ? 1.9 : 2.1, s - 0.45)
         break
       }
     }
@@ -135,16 +192,17 @@ export default function Player({ onNear }: { onNear: (id: string | null) => void
     const dist = camDist.current
     const camX = nx + dirX * dist
     const camZ = nz + dirZ * dist
-    const camY = 1.55 + Math.sin(pitch) * dist
+    let camY = 1.55 + Math.sin(pitch) * dist
+    if (world.ceiling) camY = Math.min(camY, world.ceiling - 0.4)
     camTarget.current.set(camX, camY, camZ)
     camera.position.lerp(camTarget.current, Math.min(1, dt * 6))
-    camera.lookAt(nx, 2.05, nz)
+    camera.lookAt(nx, world.indoor ? 1.55 : 2.05, nz)
 
-    // ── proximity to a doorway ──
+    // ── proximity to something you can act on ──
     const here = new THREE.Vector2(nx, nz)
     let found: string | null = null
-    let best = 4.6
-    for (const d of doors) {
+    let best = reach
+    for (const d of targets) {
       const dist2 = d.v.distanceTo(here)
       if (dist2 < best) {
         best = dist2
@@ -168,10 +226,10 @@ export default function Player({ onNear }: { onNear: (id: string | null) => void
   })
 
   return (
-    <group ref={g} position={[0, 0, 11]}>
+    <group ref={g} position={[world.spawn[0], 0, world.spawn[1]]} rotation={[0, world.facing ?? 0, 0]}>
       <Human look={playerLook} gait={gaitRef.current} tempo={input.sprint ? 1.45 : 1.05} />
       {/* after dark, keep the character readable */}
-      {night > 0.02 && (
+      {!world.indoor && night > 0.02 && (
         <pointLight
           position={[0, 2.3, 0.7]}
           color="#ffdcae"

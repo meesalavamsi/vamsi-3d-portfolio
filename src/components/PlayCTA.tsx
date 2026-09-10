@@ -6,7 +6,7 @@ import Reveal from './Reveal'
  * band so it reads as a detour, not a competing section.
  */
 export default function PlayCTA() {
-  const facts = ['5 scenarios', '~6 minutes', 'Runs in the browser', 'No sign-up']
+  const facts = ['6 scenarios', 'Walk-in buildings', '~8 minutes', 'No sign-up']
 
   return (
     <section aria-labelledby="play-title" className="no-print py-14 md:py-20">

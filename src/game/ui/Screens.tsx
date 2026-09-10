@@ -108,10 +108,10 @@ export function BriefScreen() {
 
         <div className="mt-8 space-y-4">
           {[
-            ['Walk the city', 'Five buildings, five real problems. Head for the glowing markers.'],
+            ['Walk the city', 'Six buildings, six real problems. Head for the glowing markers.'],
+            ['Go inside', 'Press E at the doors. Every building has a real floor to walk around.'],
             ['Decide under pressure', 'Most questions run on a timer. Not answering costs you.'],
-            ['Get the reasoning', 'After every call you find out why it was right, workable or expensive.'],
-            ['Earn your review', 'Finish all five and you get a performance review with your rank.'],
+            ['Earn your review', 'Finish all six and you get a performance review with your rank.'],
           ].map(([t, d], i) => (
             <div key={t} className="flex gap-4">
               <span
